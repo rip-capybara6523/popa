@@ -239,11 +239,22 @@ class Game:
         for b in self.bullets: b.update()
         self.bullets = [b for b in self.bullets if b.active]
         for b in self.bullets:
+            # 1. Перевірка влучання у ворогів
+            hit_enemy = False
             for e in self.enemies:
                 if b.rect.colliderect(e.rect):
                     e.hp -= b.dmg
                     b.active = False
+                    hit_enemy = True
                     break
+
+            # 2. Якщо куля не влучила у ворога, перевіряємо влучання у БАЗУ ворога
+            if not hit_enemy and b.active:
+                # Базу можна атакувати далекобійними котами лише якщо бос ще не вийшов, або вже подоланий
+                if not self.boss_spawned or self.boss_defeated:
+                    if b.rect.colliderect(self.enemy_base.rect):
+                        self.enemy_base.damage(b.dmg)
+                        b.active = False
 
         # Видалення мертвих
         for sprite in list(self.all_units):
