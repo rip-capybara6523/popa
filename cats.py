@@ -12,7 +12,8 @@ class RangedCat(Unit):
 
     def update(self, enemies):
         self.shooting_mode = any(0 < enemy.rect.left - self.rect.right <= self.range_dist for enemy in enemies)
-        if not self.shooting_mode:
+        # Рухається, якщо не стріляє і не заблокований іншим котиком
+        if not self.shooting_mode and not self.is_blocked:
             self.rect.x += self.speed
 
     def can_shoot(self):

@@ -42,7 +42,8 @@ ENEMY_TYPES = [
     {"hp": 540, "speed": 0.66, "atk": 38, "color": ENEMY_SUPER_COLOR, "ranged": False, "range": 0, "name": "Суперкуб", "size": 65, "img_name": "enemy_super.png"}
 ]
 
-BOSS_STATS = {"hp": 3500, "speed": 0.33, "atk": 55, "color": (240, 219, 29), "size": 130, "img_name": "enemy_final_boss.png"}
+BOSS_STATS = {"hp": 3500, "speed": 1, "atk": 55, "color": (240, 219, 29), "size": 130, "img_name": "enemy_final_boss.png"}
+
 
 SPAWN_COOLDOWN = 2
 SPAWN_COOLDOWN_BOSS = 5

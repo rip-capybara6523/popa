@@ -133,6 +133,63 @@ class Game:
     def update_units(self):
         now = time.time()
 
+        # =====================================================================
+        # 1. ЛОГІКА БЛОКУВАННЯ КОТІВ
+        # =====================================================================
+        # Сортуємо котів за координатою X (від найближчого до ворога до найвіддаленішого)
+        sorted_cats = sorted(self.cats.sprites(), key=lambda c: c.rect.right, reverse=True)
+
+        for i, cat in enumerate(sorted_cats):
+            cat.is_blocked = False  # Скидаємо блок за замовчуванням
+
+            # Перевірка зіткнення з ворожою базою
+            if cat.rect.colliderect(self.enemy_base.rect):
+                cat.is_blocked = True
+                cat.rect.right = self.enemy_base.rect.left
+
+            # Перевірка зіткнення з котиком, який іде попереду
+            elif i > 0:
+                front_cat = sorted_cats[i - 1]
+                if cat.rect.right >= front_cat.rect.left - 2:  # 2 пікселі зазору
+                    cat.is_blocked = True
+                    cat.rect.right = front_cat.rect.left - 2
+
+            # Перевірка зіткнення з ворогами (ближній бій блокує рух кота)
+            hit_enemies = pygame.sprite.spritecollide(cat, self.enemies, False)
+            if hit_enemies and not isinstance(cat, RangedCat):
+                cat.is_blocked = True
+
+        # =====================================================================
+        # 2. НОВА ЛОГІКА БЛОКУВАННЯ ВОРОГІВ
+        # =====================================================================
+        # Сортуємо ворогів за координатою X (від найближчого до нашої бази до найвіддаленішого)
+        sorted_enemies = sorted(self.enemies.sprites(), key=lambda e: e.rect.left)
+
+        for i, enemy in enumerate(sorted_enemies):
+            enemy.is_blocked = False  # Скидаємо блок за замовчуванням
+
+            # Перевірка зіткнення з базою гравця
+            if enemy.rect.colliderect(self.player_base.rect):
+                enemy.is_blocked = True
+                enemy.rect.left = self.player_base.rect.right
+
+            # Перевірка зіткнення з іншим ворогом попереду (який ближче до бази котів)
+            elif i > 0:
+                front_enemy = sorted_enemies[i - 1]
+                if enemy.rect.left <= front_enemy.rect.right + 2:  # 2 пікселі зазору
+                    enemy.is_blocked = True
+                    enemy.rect.left = front_enemy.rect.right + 2
+
+            # Перевірка зіткнення з котами (ближній бій або бос зупиняються перед котами)
+            if not enemy.ranged or enemy == self.boss:
+                hit_cats = pygame.sprite.spritecollide(enemy, self.cats, False)
+                if hit_cats:
+                    enemy.is_blocked = True
+
+        # =====================================================================
+        # 3. ОНОВЛЕННЯ РУХУ ТА АТАК
+        # =====================================================================
+        # Оновлення котів
         for cat in self.cats:
             if isinstance(cat, RangedCat):
                 cat.tick_reload()
@@ -143,6 +200,7 @@ class Game:
             else:
                 cat.update()
 
+        # Ближній бій
         for cat in self.cats:
             hit_enemies = pygame.sprite.spritecollide(cat, self.enemies, False)
             for enemy in hit_enemies:
@@ -156,6 +214,7 @@ class Game:
                         cat.hp -= enemy.atk
                         enemy.last_attack_time[cid] = now
 
+        # Атака бази ворога
         if not self.boss_spawned or self.boss_defeated:
             for cat in self.cats:
                 if cat.rect.colliderect(self.enemy_base.rect):
@@ -163,6 +222,7 @@ class Game:
                         self.enemy_base.damage(cat.atk)
                         cat.last_attack_time['base'] = now
 
+        # Оновлення ворогів (тепер вони враховують свій флаг self.is_blocked)
         for enemy in self.enemies:
             enemy.update()
             if enemy.ranged and enemy != self.boss:
@@ -175,6 +235,7 @@ class Game:
                     self.player_base.damage(enemy.atk)
                     enemy.last_attack_time[id(enemy)] = now
 
+        # Кулі
         for b in self.bullets: b.update()
         self.bullets = [b for b in self.bullets if b.active]
         for b in self.bullets:
@@ -184,6 +245,7 @@ class Game:
                     b.active = False
                     break
 
+        # Видалення мертвих
         for sprite in list(self.all_units):
             if sprite.is_dead():
                 self.cats.remove(sprite)

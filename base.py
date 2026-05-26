@@ -20,9 +20,12 @@ class Unit(pygame.sprite.Sprite):
         self.side = side
         self.size = size
         self.last_attack_time = {}
+        self.is_blocked = False  # Нове: чи заблокований рух юніта
 
     def update(self):
-        self.rect.x += self.speed if self.side == 'ally' else -self.speed
+        # Рухаємося лише якщо попереду немає перешкод (для ближнього бою)
+        if not self.is_blocked:
+            self.rect.x += self.speed if self.side == 'ally' else -self.speed
 
     def is_dead(self):
         return self.hp <= 0
